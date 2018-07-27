@@ -1,5 +1,5 @@
 const defaultConfig = {
-    port: 3000,
+    port: 4333,
     host: '0.0.0.0'
 }
 

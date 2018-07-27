@@ -9,6 +9,10 @@ app.use(bodyParser.json())
 const server = http.Server(app)
 const io = socketio(server)
 
+io.on('connection', function (client) {
+    console.log(client.id, ' connected')
+})
+
 server.listen(defaultConfig.port, defaultConfig.host, (err) => {
     if(err) {
         console.log(err)
