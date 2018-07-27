@@ -65,12 +65,4 @@ typings/
 .DS_STORE
 .vs
 
-frontend/.npm
-frontend/.idea
-frontend/node_modules
-frontend/.DS_STORE
 
-backend/.npm
-backend/.idea
-backend/node_modules
-backend/.DS_STORE

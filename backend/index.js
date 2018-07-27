@@ -1,4 +1,4 @@
-const { defaultConfig } = require('./config')
+const { defaultConfig } = require('./config/index')
 const socketio = require('socket.io')
 const http = require('http')
 const express = require('express')
