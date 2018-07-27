@@ -9,18 +9,6 @@ app.use(bodyParser.json())
 const server = http.Server(app)
 const io = socketio(server)
 
-
-
-
-
-
-
-
-
-
-
-
-
 server.listen(defaultConfig.port, defaultConfig.host, (err) => {
     if(err) {
         console.log(err)

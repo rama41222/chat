@@ -64,3 +64,8 @@ typings/
 .idea
 .DS_STORE
 .vs
+
+frontend/.npm
+frontend/.idea
+frontend/node_modules
+frontend/.DS_STORE
