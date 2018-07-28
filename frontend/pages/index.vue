@@ -1,5 +1,14 @@
 <template>
-  <div>
+  <div class="view-wrap">
+    <div class="chat-list-wrap">
+      <div class="chat-elem-wrap" v-for="(user, index) of users" :key="index" @click="selectRoom">
+        <div style="display: inline-block">
+          <img src="/profile.png" class="img img-fluid prof-pic">
+        </div>
+        <div class="user">{{user.name}}</div>
+        <div align="center"><i class="fas fa-chevron-right next"></i></div>
+      </div>
+    </div>
 
     <b-modal id="modalPrevent"
              ref="regModal"
@@ -17,12 +26,14 @@
 
 <script>
 
-
+  import { mapGetters, mapMutations } from 'vuex'
   export default {
     created() {
     },
     mounted() {
+      if(!this.hasRegistered) {
       this.showModal()
+      }
     },
     data() {
       return {
@@ -35,13 +46,32 @@
     },
     components: {
     },
+    computed: {
+      ...mapGetters({
+        hasRegistered: 'getRegistrationStatus',
+        users: 'getUsers'
+      })
+    },
     sockets: {
       connect: function () {
         console.log('this.$socket connected')
         this.printer = 'socket connected'
+      },
+      user: function (data) {
+        console.log(data)
+        this.$store.commit('setRegistrationStatus', data.hasRegistered)
+        this.$store.commit('setUser', data.user)
+      },
+      userlist: function (data) {
+        console.log(data)
+        console.log(data.users)
+        this.$store.commit('setUsers', data.users)
       }
     },
     methods: {
+      selectRoom() {
+        console.log('select room')
+      },
       sendMessage() {
         this.$socket.emit('message', {})
       },
@@ -80,6 +110,49 @@
   .modal-dialog {
     margin-top: 22%;
   }
+.view-wrap {
+}
+
+  .chat-list-wrap {
+    display: grid;
+    grid-auto-rows: min-content;
+    overflow: scroll;
+  }
+
+  .chat-list-wrap > div{
+    background-color: #ffffff;
+    padding: 1em;
+    border-bottom: 2px solid #dbe1ec;
+    cursor: pointer;
+  }
+
+  .user {
+    -ms-word-break: break-all;
+    word-break: break-word;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    -ms-hyphens: auto;
+    hyphens: auto;
+    font-weight: bolder;
+    font-size: 1.5em;
+  }
+
+  .chat-elem-wrap {
+    display: grid;
+    grid-template-columns: 1fr 8fr 2fr ;
+    grid-column-gap: 1em;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .next {
+    font-size: 2.2em;
+    color: #dbe1ec;
+  }
+
+  .prof-pic {
+  }
 
 </style>
+
 

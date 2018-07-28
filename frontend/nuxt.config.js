@@ -31,7 +31,7 @@ module.exports = {
     baseURL: "https://localhost:4333"
   },
   loading: { color: '#3B8070' },
-  plugins: [ {src:'~plugins/socketio.js',ssr: false}, '~plugins/axios.js'],
+  plugins: [ {src:'~plugins/socketio.js',ssr: false}, '~plugins/axios.js',  { src: '~plugins/auth.js', ssr: false}],
   build: {
     extend (config, { isDev, isClient }) {
       if (isDev && isClient) {
