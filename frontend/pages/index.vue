@@ -3,7 +3,7 @@
 
     <b-modal id="modalPrevent"
              ref="regModal"
-             title="Submit your name"
+             title="Register"
              @ok="handleOk"
              @shown="clearName"  no-close-on-esc  no-close-on-backdrop hide-header-close  hide-footer-close cancel-disabled >
       <form @submit.stop.prevent="handleOk">
