@@ -2,8 +2,7 @@ const state = () => ({
   hasRegistered: false,
   user: '',
   users: [],
-  connect: false,
-  fuck:''
+  chatHistory: []
 })
 
 const getters = {
@@ -15,6 +14,9 @@ const getters = {
   },
   getUsers: state => {
     return state.users
+  },
+  getChatHistory: state => {
+    return state.chatHistory
   }
 }
 
@@ -28,23 +30,15 @@ const mutations = {
   setUsers: function (state, users) {
     state.users = users
   },
-  SOCKET_CONNECT: function (state,  status) {
-    state.connect = true;
-    console.log('this.$socket connected')
-    console.log('this.$socket connected---------------------')
+  setChatHistory: function (state, data) {
+    console.log('data is here', state.chatHistory)
+    state.chatHistory.push(data)
   },
-  SOCKET_USER:function (state ,user) {
-    console.log(user)
-    state.fuck = user
-    console.log('this.user  connected---------------------')
-  
-  }
+ 
 }
 
 const actions = {
-  socket_connect({commit}, payload){
-    console.log('this.$socket connected---------------------')
-  },
+  
   async register({commit}, payload) {
     commit('setRegistrationStatus', payload.status);
   },

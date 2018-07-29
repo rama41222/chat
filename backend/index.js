@@ -22,15 +22,16 @@ io.on('connection', function (client) {
     })
     
     client.on('subscribe', function (data) {
-        console.log('executed ......')
-        console.log(data)
-        console.log('executed ......')
-        
-        client.join(data.roomid)
-        if(typeof data.user.id === 'undefined' || !data.user) {
-            return
-        }
-        io.sockets.connected[data.user.id].emit('request', { roomid: data.roomid , user: data.user});
+     try {
+         client.join(data.roomid)
+         if(typeof data.user.id === 'undefined' || !data.user) {
+             return
+         }
+         io.sockets.connected[data.user.id].emit('request', { roomid: data.roomid , user: data.user, me: data.me});
+     } catch (e) {
+         client.emit('errors', 'Please Reconnect Again')
+     }
+     
     })
     
     client.on('join-room', function (data) {
@@ -38,20 +39,32 @@ io.on('connection', function (client) {
     })
     
     client.on('private-chat', function (data) {
-        client.broadcast.to(data.roomid).emit('privatemessage', data.message)
+        try {
+            console.log(data.to)
+        client.broadcast.to(data.roomid).emit('privatemessage', {message: data.message, roomid: data.roomid })
+        io.sockets.connected[data.to].emit('newprivatemessage', {message: data.message, roomid: data.roomid })
+        } catch (e) {
+            client.emit('errors', 'Please Reconnect Again')
+    
+        }
     })
     
     client.on('create-private-room', function (data) {
         if(client.id !== data.self.id) {
-            client.emit('error', 'Unauthorized Client')
+            client.emit('errors', 'Unauthorized Client')
             return
         }
         const roomId = uuid()
         client.emit('joinroom', { roomid: roomId, user: data.user} )
     })
     
+    client.on('user-request', function () {
+        io.emit('userlist',{ users: getClients() } )
+    })
+    
     client.on('disconnect', function () {
         removeClient(client.id)
+        io.emit('userlist',{ users: getClients() } )
     })
     
 })

@@ -1,12 +1,14 @@
 <template>
   <div>
-    <div class="chat-list-wrap" style="margin-top: 3.5em; position: absolute; z-index: -1">
-      <div class="chat-elem-wrap" v-for="(item, index) of newChats" :key="index" @click="goChat(item)">
-        <div style="display: inline-block">
-          <img src="/profile.png" class="img img-fluid prof-pic">
-        </div>
-        <div class="user">{{item.user.name}}</div>
-        <div align="center"><i class="fas fa-chevron-right next"></i></div>
+    <div class="chat-list-wrap" style="margin-top: 6.0em; position: absolute; z-index: -1">
+
+      <div class="chat-elem-wrap-new" v-if="newChats.length > 0" v-for="(item, index) of newChats" :key="index"
+           @click="goChat(item)">
+          <span class="req-bubble">
+            <img src="/profile.png" class="img img-fluid req-prof-pic">
+            <div class="req-user">{{item.user.name}}</div>
+          </span>
+        <!--<div align="center"><i class="fas fa-chevron-right next"></i></div>-->
       </div>
 
       <div class="chat-elem-wrap" @click="selectPublic">
@@ -43,14 +45,17 @@
 
 <script>
 
-  import { mapGetters, mapMutations } from 'vuex'
+  import { mapGetters } from 'vuex'
   export default {
     created() {
     },
     mounted() {
       if(!this.hasRegistered) {
       this.showModal()
+      } else {
+        this.fetchUsers()
       }
+
     },
     data() {
       return {
@@ -80,6 +85,12 @@
         this.$store.commit('setRegistrationStatus', data.hasRegistered)
         this.$store.commit('setUser', data.user)
       },
+      newprivatemessage: function (data) {
+        this.$store.commit('setChatHistory', data)
+        console.log('dfdfdf')
+        console.log(data)
+        console.log('dfdfdf')
+      },
       userlist: function (data) {
         console.log(data)
         console.log(data.users)
@@ -87,18 +98,21 @@
       },
       joinroom: function (data) {
         this.$socket.emit('subscribe', { roomid: data.roomid, user: data.user, me: this.user})
-        this.$router.push(`/chatroom/${data.roomid}#${data.user.id}`)
+        this.$router.push(`/chatroom/${data.roomid}|${data.user.id}`)
       },
       errors: function (data) {
         this.$toast.error(data, { icon: 'error' })
       },
       request: function (data) {
         console.log(data.me)
-        this.newChats.push({url:`/chatroom/${data.roomid}#${data.user.id}#1`, user: data.me })
+        this.newChats.push({url:`/chatroom/${data.roomid}|${data.user.id}|1`, user: data.me })
         this.$toast.success('New Chat Request', { icon: 'done'})
       },
     },
     methods: {
+      fetchUsers(){
+        this.$socket.emit('user-request')
+      },
       goChat(item){
         console.log(item)
         this.$router.push(item.url)
@@ -183,14 +197,39 @@
     align-items: center;
   }
 
+  .chat-elem-wrap-new {
+    display: inline-block;
+    justify-content: center;
+    align-items: center;
+    background: red;
+  }
+
+  .chat-elem-wrap-new > div {
+
+  }
+
   .next {
     font-size: 2.2em;
     color: #dbe1ec;
   }
 
-  .prof-pic {
+  .req-prof-pic {
+    display: inline-block;
+    width: 2em;
+    height: 2em;
   }
 
+  .req-user {
+    display: inline-block;
+  }
+
+  .req-bubble {
+    background-color: #ff7b02;
+    padding: 1em;
+    border-radius: 2em;
+    color: #000000;
+    font-weight: bold;
+  }
 </style>
 
 

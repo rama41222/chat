@@ -32,13 +32,20 @@
 </template>
 
 <script>
+    import  { mapGetters } from 'vuex'
     export default {
       validate({params}) {
         return true
       },
       created(){
-        this.id = this.$route.params.id.split('#')[0]
-        this.to = this.$route.params.id.split('#')[1]
+        [this.id, this.to]= this.$route.params.id.split('|')
+
+        if(this.chatHistory && this.chatHistory.length > 0) {
+          let localHistory  = this.chatHistory.filter( item => { return this.id === item.roomid })
+          this.chatList = localHistory.reverse().map(item => {
+            return {message: item.message, received: true }
+          })
+        }
       },
       mounted() {
           this.subscribeToPrivateChat()
@@ -56,11 +63,16 @@
           refresh:false
         }
       },
+      computed: {
+        ...mapGetters({
+          chatHistory: 'getChatHistory'
+        })
+      },
       components: {
       },
       sockets: {
-        privatemessage: function (message) {
-          this.chatList.unshift({message: message, received: true })
+        privatemessage: function (data) {
+          this.chatList.unshift({message: data.message, received: true })
           this.refresh = false
           this.refresh = true
         }
@@ -70,7 +82,7 @@
           this.$socket.emit('join-room', {roomid: this.id});
         },
         sendMessage() {
-          this.$socket.emit('private-chat', { roomid: this.id, message:this.message })
+          this.$socket.emit('private-chat', { roomid: this.id, message:this.message, to: this.to })
           this.chatList.unshift({message: this.message, received: false })
           this.message = ''
         },
