@@ -1,15 +1,21 @@
 <template>
-    <div class="display-wrap">
+    <div class="display-wrap" :class="refresh">
       <div class="wrapper">
-        <div class="chat-messages">
-          <div align="center" v-if="isTyping"><p class="saving"><span>.</span><span>.</span><span>.</span></p></div>
+        <div class="chat-messages" >
+         <div v-for="(msg, index) in chatList" :key="index">
+           <div align="center" v-if="isTyping"><p class="saving"><span>.</span><span>.</span><span>.</span></p></div>
 
-          <div class="receiver"><p>
-            dsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsds</p>
-          </div>
-          <div class="sender" align="right"><p>
-            sdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcxsdsdsdxcx</p>
-          </div>
+           <div class="receiver" v-if="msg.received" >
+             <p>
+               {{msg.message}}
+           </p>
+           </div>
+           <div class="sender" align="right" v-else>
+             <p>
+               {{msg.message}}
+             </p>
+           </div>
+         </div>
         </div>
         <div class="col-wrapper">
           <div>
@@ -27,9 +33,15 @@
 
 <script>
     export default {
-      created() {
+      validate({params}) {
+        return true
+      },
+      created(){
+        this.id = this.$route.params.id.split('#')[0]
+        this.to = this.$route.params.id.split('#')[1]
       },
       mounted() {
+          this.subscribeToPrivateChat()
       },
       data() {
         return {
@@ -38,41 +50,29 @@
           message: '',
           name: '',
           isTyping: false,
+          id:'',
+          to:'',
+          shouldJoin: false,
+          refresh:false
         }
       },
       components: {
       },
       sockets: {
-        connect: function () {
-          console.log('this.$socket connected')
-          this.printer = 'socket connected'
+        privatemessage: function (message) {
+          this.chatList.unshift({message: message, received: true })
+          this.refresh = false
+          this.refresh = true
         }
       },
       methods: {
+        subscribeToPrivateChat() {
+          this.$socket.emit('join-room', {roomid: this.id});
+        },
         sendMessage() {
-          this.$socket.emit('message', {})
-        },
-        sendName() {
-          this.$socket.emit('register', { name: this.name })
-          this.clearName()
-          this.hideModal()
-        },
-        showModal() {
-          this.$refs.regModal.show()
-        },
-        hideModal() {
-          this.$refs.regModal.hide()
-        },
-        clearName () {
-          this.name = ''
-        },
-        handleOk (evt) {
-          evt.preventDefault()
-          if (!this.name) {
-            this.$toast.error('Please enter your name', { icon: 'error'})
-          } else {
-            this.sendName()
-          }
+          this.$socket.emit('private-chat', { roomid: this.id, message:this.message })
+          this.chatList.unshift({message: this.message, received: false })
+          this.message = ''
         },
       }
     }

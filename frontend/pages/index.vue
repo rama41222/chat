@@ -1,11 +1,28 @@
 <template>
-  <div class="view-wrap">
-    <div class="chat-list-wrap">
-      <div class="chat-elem-wrap" v-for="(user, index) of users" :key="index" @click="selectRoom">
+  <div>
+    <div class="chat-list-wrap" style="margin-top: 3.5em; position: absolute; z-index: -1">
+      <div class="chat-elem-wrap" v-for="(item, index) of newChats" :key="index" @click="goChat(item)">
         <div style="display: inline-block">
           <img src="/profile.png" class="img img-fluid prof-pic">
         </div>
-        <div class="user">{{user.name}}</div>
+        <div class="user">{{item.user.name}}</div>
+        <div align="center"><i class="fas fa-chevron-right next"></i></div>
+      </div>
+
+      <div class="chat-elem-wrap" @click="selectPublic">
+        <div style="display: inline-block">
+          <img src="/profile.png" class="img img-fluid prof-pic">
+        </div>
+        <div class="user">Public</div>
+        <div align="center"><i class="fas fa-chevron-right next"></i></div>
+      </div>
+
+      <div class="chat-elem-wrap" v-if="usr.id !== user.id" v-for="(usr, index) of users" :key="index"
+           @click="selectRoom(usr)">
+        <div style="display: inline-block">
+          <img src="/profile.png" class="img img-fluid prof-pic">
+        </div>
+        <div class="user">{{usr.name}}</div>
         <div align="center"><i class="fas fa-chevron-right next"></i></div>
       </div>
     </div>
@@ -42,6 +59,7 @@
         message: '',
         name: '',
         isTyping: false,
+        newChats: []
       }
     },
     components: {
@@ -49,13 +67,13 @@
     computed: {
       ...mapGetters({
         hasRegistered: 'getRegistrationStatus',
-        users: 'getUsers'
+        users: 'getUsers',
+        user: 'getUser'
       })
     },
     sockets: {
       connect: function () {
         console.log('this.$socket connected')
-        this.printer = 'socket connected'
       },
       user: function (data) {
         console.log(data)
@@ -66,11 +84,31 @@
         console.log(data)
         console.log(data.users)
         this.$store.commit('setUsers', data.users)
-      }
+      },
+      joinroom: function (data) {
+        this.$socket.emit('subscribe', { roomid: data.roomid, user: data.user, me: this.user})
+        this.$router.push(`/chatroom/${data.roomid}#${data.user.id}`)
+      },
+      errors: function (data) {
+        this.$toast.error(data, { icon: 'error' })
+      },
+      request: function (data) {
+        console.log(data.me)
+        this.newChats.push({url:`/chatroom/${data.roomid}#${data.user.id}#1`, user: data.me })
+        this.$toast.success('New Chat Request', { icon: 'done'})
+      },
     },
     methods: {
-      selectRoom() {
-        console.log('select room')
+      goChat(item){
+        console.log(item)
+        this.$router.push(item.url)
+
+      },
+      selectRoom(user) {
+        this.$socket.emit('create-private-room', {self: this.user, user: user, })
+      },
+      selectPublic(){
+        this.$router.push(`/chatroom/public`)
       },
       sendMessage() {
         this.$socket.emit('message', {})
