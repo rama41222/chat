@@ -1,16 +1,17 @@
 <template>
-<div class="nav-wrapper">
-  <div>
-    <nuxt-link class="link" to="/">Home</nuxt-link>
-  </div>
-  <div align="right">
-    <nuxt-link class="uname" to="/">Hello! {{user.name}}</nuxt-link>
+  <div class="nav-wrapper">
+    <div>
+      <nuxt-link class="link" to="/">Home</nuxt-link>
+    </div>
+    <div align="right">
+      <nuxt-link class="uname" to="/">Hello! {{user.name}}</nuxt-link>
 
+    </div>
   </div>
-</div>
 </template>
 <script>
- import { mapGetters } from 'vuex'
+  import {mapGetters} from 'vuex'
+
   export default {
     created() {
     },
@@ -30,20 +31,20 @@
 </script>
 
 <style scoped>
-.nav-wrapper {
-  position: fixed;
-  width: 100%;
-  padding: 1.2em;
-  margin-top: 0;
-  color: white;
-  display: grid;
-  grid-template-columns: 5fr 5fr;
-  background-color: royalblue;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
+  .nav-wrapper {
+    position: fixed;
+    width: 100%;
+    padding: 1.2em;
+    margin-top: 0;
+    color: white;
+    display: grid;
+    grid-template-columns: 5fr 5fr;
+    background-color: royalblue;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
 
-}
+  }
 
   .link {
     pointer: cursor;

@@ -1,17 +1,8 @@
 <template>
-  <div>
-    <div class="chat-list-wrap" style="margin-top: 6.0em; position: absolute; z-index: -1">
+  <div class="display-wrap-main">
+    <div class="chat-list-wrap" style="margin-top: 4.0em;">
 
-      <div class="chat-elem-wrap-new" v-if="newChats.length > 0" v-for="(item, index) of newChats" :key="index"
-           @click="goChat(item)">
-          <span class="req-bubble">
-            <img src="/profile.png" class="img img-fluid req-prof-pic">
-            <div class="req-user">{{item.user.name}}</div>
-          </span>
-        <!--<div align="center"><i class="fas fa-chevron-right next"></i></div>-->
-      </div>
-
-      <div class="chat-elem-wrap" @click="selectPublic">
+      <div class="chat-elem-wrap" @click="selectPublic" style="cursor: pointer!important;">
         <div style="display: inline-block">
           <img src="/profile.png" class="img img-fluid prof-pic">
         </div>
@@ -28,12 +19,19 @@
         <div align="center"><i class="fas fa-chevron-right next"></i></div>
       </div>
     </div>
-
+    <div>
+      <chat v-if="isPublic" :id="selectedRoomId" :to="selectedTo" :isPublic="isPublic" :chatList="publicChatHistory"
+            :refetch="refetch"
+      ></chat>
+      <chat v-else :id="selectedRoomId" :to="selectedTo" :isPublic="isPublic" :chatList="privateChatHistory"
+            :refetch="refetch"></chat>
+    </div>
     <b-modal id="modalPrevent"
              ref="regModal"
              title="Register"
              @ok="handleOk"
-             @shown="clearName"  no-close-on-esc  no-close-on-backdrop hide-header-close  hide-footer-close cancel-disabled >
+             @shown="clearName" no-close-on-esc no-close-on-backdrop hide-header-close hide-footer-close
+             cancel-disabled>
       <form @submit.stop.prevent="handleOk">
         <b-form-input type="text"
                       placeholder="Enter your name"
@@ -45,13 +43,15 @@
 
 <script>
 
-  import { mapGetters } from 'vuex'
+  import {mapGetters} from 'vuex'
+  import Chat from './../components/Chat'
+
   export default {
     created() {
     },
     mounted() {
-      if(!this.hasRegistered) {
-      this.showModal()
+      if (!this.user) {
+        this.showModal()
       } else {
         this.fetchUsers()
       }
@@ -59,20 +59,25 @@
     },
     data() {
       return {
-        chatList: [],
-        printer: '',
         message: '',
         name: '',
         isTyping: false,
-        newChats: []
+        newChats: [],
+        selectedRoomId: 'public',
+        selectedTo: '',
+        isPublic: true,
+        refetch: false
       }
     },
     components: {
+      Chat
     },
     computed: {
       ...mapGetters({
         hasRegistered: 'getRegistrationStatus',
         users: 'getUsers',
+        privateChatHistory: 'getPrivateChatHistory',
+        publicChatHistory: 'getPublicChatHistory',
         user: 'getUser'
       })
     },
@@ -81,54 +86,66 @@
         console.log('this.$socket connected')
       },
       user: function (data) {
-        console.log(data)
         this.$store.commit('setRegistrationStatus', data.hasRegistered)
         this.$store.commit('setUser', data.user)
       },
       newprivatemessage: function (data) {
-        this.$store.commit('setChatHistory', data)
-        console.log('dfdfdf')
-        console.log(data)
-        console.log('dfdfdf')
+        this.$store.commit('setPrivateChatHistory', data)
+      },
+      newpublicmessage: function (data) {
+        this.$store.commit('setPublicChatHistory', data)
       },
       userlist: function (data) {
-        console.log(data)
-        console.log(data.users)
         this.$store.commit('setUsers', data.users)
+        this.selectPublic()
       },
-      joinroom: function (data) {
-        this.$socket.emit('subscribe', { roomid: data.roomid, user: data.user, me: this.user})
-        this.$router.push(`/chatroom/${data.roomid}|${data.user.id}`)
+      privatechatready: function (data) {
+        this.selectPrivate(data)
       },
       errors: function (data) {
-        this.$toast.error(data, { icon: 'error' })
+        this.$toast.error(data, {icon: 'error'})
       },
       request: function (data) {
-        console.log(data.me)
-        this.newChats.push({url:`/chatroom/${data.roomid}|${data.user.id}|1`, user: data.me })
-        this.$toast.success('New Chat Request', { icon: 'done'})
+        this.selectPrivate(data)
+        this.$socket.emit('subscribe', {roomid: data.roomid, to: data.to, from: data.from})
+        this.$toast.success('New Chat Request', {icon: 'done'})
       },
+      login: function (data) {
+        this.$router.push("/")
+      }
     },
     methods: {
-      fetchUsers(){
+      fetchUsers() {
+        this.$socket.emit('register', {name: this.user.name})
         this.$socket.emit('user-request')
       },
-      goChat(item){
-        console.log(item)
-        this.$router.push(item.url)
-
+      subscribeToPrivateChat() {
+        this.$socket.emit('join-room', {roomid: this.selectedRoomId});
       },
       selectRoom(user) {
-        this.$socket.emit('create-private-room', {self: this.user, user: user, })
+        this.$socket.emit('create-private-room', {self: this.user, user: user})
       },
-      selectPublic(){
-        this.$router.push(`/chatroom/public`)
+      selectPublic() {
+        this.selectedRoomId = 'public'
+        this.selectedTo = ''
+        this.isPublic = true
+        this.refetch = true
+        this.refetch = false
+      },
+      selectPrivate(data) {
+        this.$socket.emit('private-chat-history', data.roomid)
+        this.selectedRoomId = data.roomid
+        this.selectedTo = data.to
+        this.isPublic = false
+        this.chatList = this.privateChatHistory
+        this.refetch = true
+        this.refetch = false
       },
       sendMessage() {
         this.$socket.emit('message', {})
       },
       sendName() {
-        this.$socket.emit('register', { name: this.name })
+        this.$socket.emit('register', {name: this.name})
         this.clearName()
         this.hideModal()
       },
@@ -138,13 +155,13 @@
       hideModal() {
         this.$refs.regModal.hide()
       },
-      clearName () {
+      clearName() {
         this.name = ''
       },
-      handleOk (evt) {
+      handleOk(evt) {
         evt.preventDefault()
         if (!this.name) {
-          this.$toast.error('Please enter your name', { icon: 'error'})
+          this.$toast.error('Please enter your name', {icon: 'error'})
         } else {
           this.sendName()
         }
@@ -156,22 +173,29 @@
 <style>
 
   .modal {
-    background: rgba(0,0,0,0.9);
+    background: rgba(0, 0, 0, 0.9);
   }
 
   .modal-dialog {
     margin-top: 22%;
   }
-.view-wrap {
-}
+
+  .view-wrap {
+  }
+
+  .display-wrap-main {
+    display: grid;
+    grid-template-rows: min-content;
+  }
 
   .chat-list-wrap {
     display: grid;
     grid-auto-rows: min-content;
     overflow: scroll;
+    border: 2px solid #cecece;
   }
 
-  .chat-list-wrap > div{
+  .chat-list-wrap > div {
     background-color: #ffffff;
     padding: 1em;
     border-bottom: 2px solid #dbe1ec;
@@ -191,7 +215,7 @@
 
   .chat-elem-wrap {
     display: grid;
-    grid-template-columns: 1fr 8fr 2fr ;
+    grid-template-columns: 1fr 8fr 2fr;
     grid-column-gap: 1em;
     justify-content: center;
     align-items: center;
@@ -201,7 +225,7 @@
     display: inline-block;
     justify-content: center;
     align-items: center;
-    background: red;
+
   }
 
   .chat-elem-wrap-new > div {
@@ -224,11 +248,20 @@
   }
 
   .req-bubble {
-    background-color: #ff7b02;
+    background-color: #efefef;
     padding: 1em;
     border-radius: 2em;
     color: #000000;
     font-weight: bold;
+    margin: 0.8em;
+  }
+
+  @media (min-width: 700px) {
+
+    .display-wrap-main {
+      display: grid;
+      grid-template-columns: 4fr 10fr;
+    }
   }
 </style>
 

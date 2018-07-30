@@ -1,10 +1,11 @@
 const socketio = require('socket.io')
 const http = require('http')
-const uuid = require('uuid')
 const express = require('express')
 const bodyParser = require('body-parser')
-const { defaultConfig } = require('./config/index')
-const { setClient, getClients, removeClient, getClientById }  = require('./models/Client')()
+const {defaultConfig} = require('./config/index')
+const {setClient, getClients, removeClient, getClientById} = require('./models/Client')()
+const {setPublicChatRecord, getPublicChatRecords} = require('./models/PublicChat')()
+const {setPrivateChatRecord, getPrivateChatRecordsByRoomId} = require('./models/PrivateChat')()
 
 const app = express()
 app.use(bodyParser.json())
@@ -17,60 +18,124 @@ io.on('connection', function (client) {
     
     client.on('register', function (data) {
         setClient(client.id, data.name)
-        client.emit('user',{ hasRegistered: true, user: {id: client.id, name:getClientById(client.id)} } )
-        io.emit('userlist',{ users: getClients() } )
+        client.emit('user', {hasRegistered: true, user: {id: client.id, name: getClientById(client.id)}})
+        const publicHistory = getPublicChatRecords()
+        if (publicHistory && publicHistory.length > 0) {
+            client.emit('newpublicmessage', publicHistory)
+        }
+        io.emit('userlist', {users: getClients()})
+        
     })
     
     client.on('subscribe', function (data) {
-     try {
-         client.join(data.roomid)
-         if(typeof data.user.id === 'undefined' || !data.user) {
-             return
-         }
-         io.sockets.connected[data.user.id].emit('request', { roomid: data.roomid , user: data.user, me: data.me});
-     } catch (e) {
-         client.emit('errors', 'Please Reconnect Again')
-     }
-     
-    })
-    
-    client.on('join-room', function (data) {
-        client.join(data.roomid)
+        try {
+            
+            if (typeof data.to.id === 'undefined' || typeof data.from.id === 'undefined' || !data.to || !data.from) {
+                return
+            }
+            
+            client.join(data.roomid)
+            const history = getPrivateChatRecordsByRoomId(data.roomid)
+            
+            if (history && history.length > 0) {
+                client.emit('newprivatemessage', history)
+                io.sockets.connected[data.user.id].emit('newprivatemessage', history)
+            }
+            io.sockets.connected[data.to.id].emit('request', { roomid: data.roomid , to: data.to, from: data.from});
+            
+        } catch (e) {
+            client.emit('errors', 'Please Reconnect Again')
+        }
+        
     })
     
     client.on('private-chat', function (data) {
         try {
-            console.log(data.to)
-        client.broadcast.to(data.roomid).emit('privatemessage', {message: data.message, roomid: data.roomid })
-        io.sockets.connected[data.to].emit('newprivatemessage', {message: data.message, roomid: data.roomid })
+            setPrivateChatRecord(data)
+            client.broadcast.to(data.roomid).emit('privatemessage', {
+                message: data.message,
+                roomid: data.roomid,
+                from: data.from
+            })
+            io.sockets.connected[data.to.id].emit('privatemessage', {
+                to: data.to,
+                message: data.message,
+                roomid: data.roomid,
+                from: data.from
+            })
+            io.sockets.connected[data.from.id].emit('privatemessage', {
+                from: data.to,
+                message: data.message,
+                roomid: data.roomid,
+                from: data.from
+            })
         } catch (e) {
             client.emit('errors', 'Please Reconnect Again')
+        }
+    })
     
+    
+    client.on('public-chat', function (data) {
+        try {
+            setPublicChatRecord(data)
+            io.emit('publicmessage', {message: data.message, roomid: data.roomid, from: data.from})
+        } catch (e) {
+            client.emit('errors', 'Please Reconnect Again')
         }
     })
     
     client.on('create-private-room', function (data) {
-        if(client.id !== data.self.id) {
-            client.emit('errors', 'Unauthorized Client')
-            return
+        try {
+            if (client.id !== data.self.id) {
+                client.emit('errors', 'Unauthorized Client')
+                client.emit('login')
+                return
+            }
+            
+            let roomId = `${data.user.id}-${data.self.id}`
+            roomId = roomId.split('').sort().join('')
+            client.join(data.roomid)
+            client.emit('privatechatready', {roomid: roomId, to: data.user, from: data.self})
+            
+        } catch (e) {
+            client.emit('errors', 'Error Occured Fetching Chat History')
         }
-        const roomId = uuid()
-        client.emit('joinroom', { roomid: roomId, user: data.user} )
     })
     
     client.on('user-request', function () {
-        io.emit('userlist',{ users: getClients() } )
+        io.emit('userlist', {users: getClients()})
+    })
+    
+    client.on('private-chat-history', function (id) {
+        try {
+            
+            if (typeof id === 'undefined' || !id) {
+                return
+            }
+            //{ roomid: data.roomid, to: data.to, from: data.from}
+            
+            // client.join(data.roomid)
+            const history = getPrivateChatRecordsByRoomId(id)
+            
+            if (history && history.length > 0) {
+                client.emit('newprivatemessage', history)
+            }
+            // io.sockets.connected[data.to.id].emit('request', { roomid: data.roomid , to: data.to, from: data.from});
+            
+        } catch (e) {
+            client.emit('errors', 'Please Reconnect Again')
+        }
     })
     
     client.on('disconnect', function () {
         removeClient(client.id)
-        io.emit('userlist',{ users: getClients() } )
+        io.emit('userlist', {users: getClients()})
     })
     
 })
 
 server.listen(defaultConfig.port, defaultConfig.host, (err) => {
-    if(err) {
+    if (err) {
         console.log(err)
         process.exit(1)
     }

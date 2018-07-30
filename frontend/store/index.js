@@ -1,8 +1,12 @@
+import Vuex from 'vuex'
+
 const state = () => ({
   hasRegistered: false,
   user: '',
   users: [],
-  chatHistory: []
+  privateChatHistory: [],
+  publicChatHistory: []
+  
 })
 
 const getters = {
@@ -15,8 +19,11 @@ const getters = {
   getUsers: state => {
     return state.users
   },
-  getChatHistory: state => {
-    return state.chatHistory
+  getPrivateChatHistory: state => {
+    return state.privateChatHistory
+  },
+  getPublicChatHistory: state => {
+    return state.publicChatHistory
   }
 }
 
@@ -30,11 +37,18 @@ const mutations = {
   setUsers: function (state, users) {
     state.users = users
   },
-  setChatHistory: function (state, data) {
-    console.log('data is here', state.chatHistory)
-    state.chatHistory.push(data)
+  setPrivateChatHistory: function (state, data) {
+    state.privateChatHistory = data
   },
- 
+  setPublicChatHistory: function (state, data) {
+    state.publicChatHistory = data
+  },
+  setPublicChatHistorySingle: function (state, data) {
+    state.publicChatHistory.unshift(data)
+  },
+  setPrivateChatHistorySingle: function (state, data) {
+    state.privateChatHistory.unshift(data)
+  }
 }
 
 const actions = {
@@ -55,5 +69,5 @@ export default {
   actions,
   mutations,
   getters
-  
+
 }
