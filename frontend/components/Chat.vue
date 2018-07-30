@@ -87,6 +87,10 @@
         this.$socket.emit('join-room', {roomid: this.id});
       },
       sendMessage() {
+        if(this.message === 'undefined' || !this.message) {
+          this.$toast.error('Please Enter a message to send', { icon: 'error'})
+          return
+        }
         if (this.isPublic) {
           this.$socket.emit('public-chat', {roomid: this.id, message: this.message, from: this.user})
           this.message = ''

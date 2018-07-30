@@ -105,11 +105,6 @@
       errors: function (data) {
         this.$toast.error(data, {icon: 'error'})
       },
-      request: function (data) {
-        this.selectPrivate(data)
-        this.$socket.emit('subscribe', {roomid: data.roomid, to: data.to, from: data.from})
-        this.$toast.success('New Chat Request', {icon: 'done'})
-      },
       login: function (data) {
         this.$router.push("/")
       }
@@ -133,11 +128,12 @@
         this.refetch = false
       },
       selectPrivate(data) {
+        this.chatList = []
         this.$socket.emit('private-chat-history', data.roomid)
+        this.chatList = this.privateChatHistory
         this.selectedRoomId = data.roomid
         this.selectedTo = data.to
         this.isPublic = false
-        this.chatList = this.privateChatHistory
         this.refetch = true
         this.refetch = false
       },

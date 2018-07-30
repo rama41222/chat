@@ -27,28 +27,6 @@ io.on('connection', function (client) {
         
     })
     
-    client.on('subscribe', function (data) {
-        try {
-            
-            if (typeof data.to.id === 'undefined' || typeof data.from.id === 'undefined' || !data.to || !data.from) {
-                return
-            }
-            
-            client.join(data.roomid)
-            const history = getPrivateChatRecordsByRoomId(data.roomid)
-            
-            if (history && history.length > 0) {
-                client.emit('newprivatemessage', history)
-                io.sockets.connected[data.user.id].emit('newprivatemessage', history)
-            }
-            io.sockets.connected[data.to.id].emit('request', { roomid: data.roomid , to: data.to, from: data.from});
-            
-        } catch (e) {
-            client.emit('errors', 'Please Reconnect Again')
-        }
-        
-    })
-    
     client.on('private-chat', function (data) {
         try {
             setPrivateChatRecord(data)
@@ -70,6 +48,8 @@ io.on('connection', function (client) {
                 from: data.from
             })
         } catch (e) {
+            console.log(e)
+            console.log('1')
             client.emit('errors', 'Please Reconnect Again')
         }
     })
@@ -96,7 +76,7 @@ io.on('connection', function (client) {
             roomId = roomId.split('').sort().join('')
             client.join(data.roomid)
             client.emit('privatechatready', {roomid: roomId, to: data.user, from: data.self})
-            
+    
         } catch (e) {
             client.emit('errors', 'Error Occured Fetching Chat History')
         }
@@ -120,9 +100,9 @@ io.on('connection', function (client) {
             if (history && history.length > 0) {
                 client.emit('newprivatemessage', history)
             }
-            // io.sockets.connected[data.to.id].emit('request', { roomid: data.roomid , to: data.to, from: data.from});
             
         } catch (e) {
+            console.log(e)
             client.emit('errors', 'Please Reconnect Again')
         }
     })
