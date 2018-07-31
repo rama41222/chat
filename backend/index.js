@@ -2,6 +2,7 @@ const socketio = require('socket.io')
 const http = require('http')
 const express = require('express')
 const bodyParser = require('body-parser')
+
 const {defaultConfig} = require('./config/index')
 const {setClient, getClients, removeClient, getClientById} = require('./models/Client')()
 const {setPublicChatRecord, getPublicChatRecords} = require('./models/PublicChat')()
@@ -9,6 +10,7 @@ const {setPrivateChatRecord, getPrivateChatRecordsByRoomId} = require('./models/
 
 const app = express()
 app.use(bodyParser.json())
+
 const server = http.Server(app)
 const io = socketio(server)
 
